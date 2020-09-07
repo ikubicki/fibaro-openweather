@@ -1,4 +1,8 @@
 
+--[[
+HTTPClient wrapper
+@author ikubicki
+]]
 class 'HTTPClient'
 
 function HTTPClient:new(options)

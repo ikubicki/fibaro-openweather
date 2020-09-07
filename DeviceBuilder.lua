@@ -1,4 +1,9 @@
 
+--[[
+Device building utility
+@author ikubicki
+]]
+
 class 'DeviceBuilder'
 
 function DeviceBuilder:new(parentDevice)

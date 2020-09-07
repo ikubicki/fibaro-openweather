@@ -1,4 +1,8 @@
 
+--[[
+Internationalization tool
+@author ikubicki
+]]
 class 'i18n'
 
 function i18n:new(langCode)

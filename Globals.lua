@@ -1,4 +1,8 @@
 
+--[[
+Global variables handler
+@author ikubicki
+]]
 class 'Globals'
 
 function Globals:get(name, alternative)

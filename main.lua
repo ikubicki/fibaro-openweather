@@ -1,3 +1,8 @@
+--[[
+OpenWeather widget
+@author ikubicki
+]]
+
 function QuickApp:onInit()
     self:debug("QuickApp:onInit")
     self:initializeProperties()
@@ -26,15 +31,16 @@ function QuickApp:pullOpenWeatherData()
         -- self:debug('tomorrow forecast', json.encode(data.daily[2]))
 
         -- Current weather
+        local weatherInfo = data.current.weather[1]
         self.builder:updateChild('openweather-provider', self.i18n:get('openweather-provider'), 'com.fibaro.weather', {
             manufacturer = 'OpenWeather',
             model = 'Weather provider',
             Wind = data.current.wind_speed * 3.6,
             Humidity = data.current.humidity,
             Temperature = data.current.temp,
-            WeatherCondition = string.lower(data.current.weather[1].main),
+            WeatherCondition = string.lower(weatherInfo.main),
             Pressure = data.current.pressure,
-            ConditionCode = 3200
+            ConditionCode = ConditionCodes:get(weatherInfo.id, weatherInfo.icon)
         })
     end
     self.http:get(self:getUrlQueryString(), callback)
@@ -43,7 +49,7 @@ end
 function QuickApp:getUrlQueryString()
     local string = '?appid=' .. self.apikey
     string = string .. '&lat=' .. self.latitude
-    string = string .. '&long=' .. self.longitude
+    string = string .. '&lon=' .. self.longitude
     string = string .. '&units=metric'
     string = string .. '&lang=pl'
     string = string .. '&exclude=minutely,hourly'
@@ -56,10 +62,10 @@ function QuickApp:initializeProperties()
     self.longitude = locationInfo.longitude
     self.apikey = self:getVariable("APIKEY")
     self.interval = 1
-
+    
     self.builder = DeviceBuilder:new(self)
     self.http = HTTPClient:new({
-        baseUrl = 'https://ixdude.com/fibaro/openweather.json' -- should be this 'https://api.openweathermap.org/data/2.5/onecall'
+        baseUrl = 'https://api.openweathermap.org/data/2.5/onecall'
     })
     self.i18n = i18n:new(api.get("/settings/info").defaultLanguage)
 
