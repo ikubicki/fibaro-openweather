@@ -33,8 +33,9 @@ function DeviceBuilder:updateChild(name, displayName, type, properties)
     if not child then
         child = self:createChild(name, displayName, type, properties)
     end
+    
     if properties ~= nil then
-        api.put('/devices/' .. child.id, {properties = properties})
+        api.put('/devices/' .. child.id, {name = displayName, properties = properties})
     end
     QuickApp:trace('Device updated: ' .. child.name .. ' [' .. child.id .. ']')
     return child
@@ -55,7 +56,7 @@ end
 
 function DeviceBuilder:createChild(name, displayName, type, properties)
     local options = {
-        name = name,
+        name = displayName,
         type = type
     }
     local child = self.parentDevice:createChildDevice(options, self.classMap[type])
