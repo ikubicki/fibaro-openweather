@@ -15,7 +15,6 @@ end
 
 function HTTPClient:get(url, success, error)
     local client = net.HTTPClient({timeout=10000})
-    QuickApp:debug('GET', self:url(url))
     client:request(self:url(url), self:requestOptions(success, error, 'GET')) 
 end
 

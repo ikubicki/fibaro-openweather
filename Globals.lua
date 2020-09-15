@@ -1,4 +1,3 @@
-
 --[[
 Global variables handler
 @author ikubicki
@@ -8,7 +7,8 @@ class 'Globals'
 function Globals:get(name, alternative)
     local response = api.get('/globalVariables/' .. name)
     if response then
-        if (string.sub(response.value, 1, 1) == '{') then
+        local char = string.sub(response.value, 1, 1)
+        if char == '{' or char == '"' then
             return json.decode(response.value)
         end
         return response.value
@@ -22,9 +22,15 @@ function Globals:set(name, value)
         value = json.encode(value)
     })
     if not response then
-        local response = api.post('/globalVariables', {
+        response = api.post('/globalVariables', {
             name = name,
             value = json.encode(value)
         })
+        
+    end
+    if response ~= nil then
+        if response.type == 'ERROR' then
+            QuickApp:error('GLOBALS ERROR[' .. response.reason .. ']:', response.message)
+        end
     end
 end

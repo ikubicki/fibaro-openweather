@@ -61,7 +61,7 @@ function DeviceBuilder:createChild(name, displayName, type, properties)
     }
     local child = self.parentDevice:createChildDevice(options, self.classMap[type])
     --local child = self:getChild(199)
-    if (properties == nil) then
+    if properties == nil then
         properties = {}
     end
     properties.quickAppVariables = {{
@@ -71,4 +71,12 @@ function DeviceBuilder:createChild(name, displayName, type, properties)
     QuickApp:trace('New device added: ' .. child.name .. ' [' .. child.id .. ']')
     api.put('/devices/' .. child.id, {roomID = self.parentRoomId, properties = properties})
     return self:getChild(child.id)
+end
+
+function DeviceBuilder:deleteChild(name)
+    local child = self:getChildByName(name)
+    if child ~= nil then
+        api.delete('/devices/' .. child.id)
+        QuickApp:trace('Device removed: ' .. child.name .. ' [' .. child.id .. ']')
+    end
 end
