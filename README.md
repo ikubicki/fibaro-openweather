@@ -20,6 +20,21 @@ Data updates every 1 hour.
 Main device requires only an `APIKEY` to be specified.
 APIKEY can be obtained from [OpenWeather API keys](https://home.openweathermap.org/api_keys) page.
 
+To filter child devices you can use `Devices` variable where you can use specify one or more of following values:
+* temperature
+* wind
+* pressure
+* humidity
+* clouds
+* uv
+* sunrise
+* sunset
+* rain
+
+Please specify multiple values separated by comas. Do not use any white characters!
+
+Defaults to `temperature,wind,pressure,humidity,clouds,uv,sunrise,sunset,rain`
+
 ## Changing weather provider
 
 To change default weather provider you need to go to Settings page and click General category. 
