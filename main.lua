@@ -68,7 +68,7 @@ function QuickApp:updateDevices(data)
     -- CLOUDS
     OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})
     -- RAIN
-    local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
+    OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
     -- UVI
     if data.uvi ~= nil then
         OWSensor:get('uv'):update(data.uvi)
