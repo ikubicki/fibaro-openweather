@@ -60,7 +60,6 @@ function DeviceBuilder:createChild(name, displayName, type, properties)
         type = type
     }
     local child = self.parentDevice:createChildDevice(options, self.classMap[type])
-    --local child = self:getChild(199)
     if properties == nil then
         properties = {}
     end
@@ -70,6 +69,7 @@ function DeviceBuilder:createChild(name, displayName, type, properties)
     }}
     QuickApp:trace('New device added: ' .. child.name .. ' [' .. child.id .. ']')
     api.put('/devices/' .. child.id, {roomID = self.parentRoomId, properties = properties})
+    self.devicesMap[name] = child.id
     return self:getChild(child.id)
 end
 
