@@ -1,4 +1,3 @@
-
 --[[
 Device building utility
 @author ikubicki
@@ -36,8 +35,8 @@ function DeviceBuilder:updateChild(name, displayName, type, properties)
     
     if properties ~= nil then
         api.put('/devices/' .. child.id, {name = displayName, properties = properties})
+        -- QuickApp:trace('Device updated: ' .. child.name .. ' [' .. child.id .. ']')
     end
-    QuickApp:trace('Device updated: ' .. child.name .. ' [' .. child.id .. ']')
     return child
 end
 

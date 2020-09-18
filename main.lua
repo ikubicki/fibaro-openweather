@@ -1,13 +1,14 @@
 --[[
-OpenWeather widget v 0.2.1
+OpenWeather widget v 1.0.0
 @author ikubicki
 ]]
 
 function QuickApp:onInit()
-    self:trace('')
-    self:trace('OpenWeather Weather Provider')
     self:initializeProperties()
     self:initializeChildren()
+    self:trace('')
+    self:trace(self.i18n:get('name'))
+    GUI:button3Render()
     self:run()
 end
 
@@ -44,138 +45,60 @@ function QuickApp:updateViewElements()
     self.gui:button1Text('refresh')
 end
 
-function QuickApp:updateSunInfo(data)
-    
-    -- SUNRISE
-    if self:isEnabled('sunrise') then
-        self.builder:updateChild('openweather-sunrise', self.i18n:get('openweather-sunrise'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Sunrise',
-            value = tonumber(os.date('%H.%M', data.sunrise))
-        })
-    else
-        self.builder:deleteChild('openweather-sunrise')
-    end
-    -- SUNSET
-    if self:isEnabled('sunset') then
-        self.builder:updateChild('openweather-sunset', self.i18n:get('openweather-sunset'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Sunset',
-            value = tonumber(os.date('%H.%M', data.sunset))
-        })
-    else
-        self.builder:deleteChild('openweather-sunset')
-    end
-end
-
 function QuickApp:updateProvider(data)
     local weatherInfo = data.weather[1]
     -- WEATHER PROVIDER
-    self.builder:updateChild('openweather-provider', self.i18n:get('openweather-provider'), 'com.fibaro.weather', {
-        manufacturer = 'OpenWeather',
-        model = 'Weather provider',
-        Wind = data.wind_speed * 3.6,
-        Humidity = data.humidity,
-        Temperature = data.temp,
-        WeatherCondition = string.lower(weatherInfo.main),
-        Pressure = data.pressure,
-        ConditionCode = ConditionCodes:get(weatherInfo.id, weatherInfo.icon)
-    })
+    self:updateProperty("WeatherCondition", string.lower(weatherInfo.main))
+    self:updateProperty("ConditionCode", ConditionCodes:get(weatherInfo.id, weatherInfo.icon))
+    self:updateProperty("Temperature", data.temp)
+    self:updateProperty("Humidity", data.humidity)
+    self:updateProperty("Wind", data.wind_speed * 3.6)
+    self:updateProperty("Pressure", data.pressure)
 end
 
 function QuickApp:updateDevices(data)
     -- TEMPERATURE
-    if self:isEnabled('temperature') then
-        self.builder:updateChild('openweather-temp', self.i18n:get('openweather-temp'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Temperature',
-            value = data.temp
-        })
-    else
-        self.builder:deleteChild('openweather-temp')
-    end
+    OWTemperature:get('temperature'):update({value = data.temp})
     -- WIND
-    if self:isEnabled('wind') then
-        self.builder:updateChild('openweather-wind', self.i18n:get('openweather-wind'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Wind',
-            value = data.wind_speed * 3.6,
-            unit = 'km/h'
-        })
-    else
-        self.builder:deleteChild('openweather-wind')
-    end
+    OWWind:get('wind'):update({value = data.wind_speed * 3.6, unit = 'km/h'})
     -- PRESSURE
-    if self:isEnabled('pressure') then
-        self.builder:updateChild('openweather-pressure', self.i18n:get('openweather-pressure'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Pressure',
-            value = data.pressure,
-            unit = 'mbar'
-        })
-    else
-        self.builder:deleteChild('openweather-pressure')
-    end
+    OWSensor:get('pressure'):update({value = data.pressure, unit = 'mbar'})
     -- HUMIDITY
-    if self:isEnabled('humidity') then
-        self.builder:updateChild('openweather-humidity', self.i18n:get('openweather-humidity'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Humidity',
-            value = data.humidity,
-            unit = '%'
-        })
-    else
-        self.builder:deleteChild('openweather-humidity')
-    end
+    OWSensor:get('humidity'):update({value = data.humidity, unit = '%'})
     -- CLOUDS
-    if self:isEnabled('clouds') then
-        self.builder:updateChild('openweather-clouds', self.i18n:get('openweather-clouds'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Clouds',
-            value = data.clouds,
-            unit = '%'
-        })
-    else
-        self.builder:deleteChild('openweather-clouds')
-    end
+    OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})
     -- RAIN
-    if self:isEnabled('rain') then
-        if data.rain == nil then
-            data.rain = {
-                ['1h'] = 0
-            }
-        end
-        self.builder:updateChild('openweather-rain', self.i18n:get('openweather-rain'), 'com.fibaro.multilevelSensor', {
-            manufacturer = 'OpenWeather',
-            model = 'Rain',
-            value = data.rain['1h'],
-            unit = 'mm'
-        })
-    else
-        self.builder:deleteChild('openweather-rain')
-    end
+    local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
     -- UVI
-    if self:isEnabled('uv') then
-        if data.uvi ~= nil then
-            self.builder:updateChild('openweather-uvi', self.i18n:get('openweather-uvi'), 'com.fibaro.multilevelSensor', {
-                manufacturer = 'OpenWeather',
-                model = 'UVI',
-                value = data.uvi
-            })
-        else
-            local uviCallback = function (response)
-                local data = json.decode(response.data)
-                self.builder:updateChild('openweather-uvi', self.i18n:get('openweather-uvi'), 'com.fibaro.multilevelSensor', {
-                    manufacturer = 'OpenWeather',
-                    model = 'UVI',
-                    value = data.value
-                })
-            end
-            self.http:get('/uvi' .. self:getUrlQueryString(), uviCallback)
+    if data.uvi ~= nil then
+        OWSensor:get('uv'):update(data.uvi)
+    elseif Toggles:get('uv') then
+        local uviCallback = function (response)
+            local data = json.decode(response.data)
+            OWSensor:get('uv'):update(data.uvi)
         end
-    else
-        self.builder:deleteChild('openweather-uvi')
+        self.http:get('/uvi' .. self:getUrlQueryString(), uviCallback)
     end
+end
+
+function QuickApp:updateSunInfo(data)
+    -- SUNRISE
+    OWSensor:get('sunrise'):update(tonumber(os.date('%H.%M', data.sunrise)))
+    -- SUNSET
+    OWSensor:get('sunset'):update(tonumber(os.date('%H.%M', data.sunset)))
+end
+
+function QuickApp:toggleMetric(e)
+    if e.elementName == 'button3_1' then Toggles:toggle('temperature') end
+    if e.elementName == 'button3_2' then Toggles:toggle('wind') end
+    if e.elementName == 'button3_3' then Toggles:toggle('pressure') end
+    if e.elementName == 'button3_4' then Toggles:toggle('humidity') end
+    if e.elementName == 'button3_5' then Toggles:toggle('clouds') end
+    if e.elementName == 'button3_6' then Toggles:toggle('rain') end
+    if e.elementName == 'button3_7' then Toggles:toggle('uv') end
+    if e.elementName == 'button3_8' then Toggles:toggle('sunrise') end
+    if e.elementName == 'button3_9' then Toggles:toggle('sunset') end
+    GUI:button3Render()
 end
 
 function QuickApp:getUrlQueryString()
@@ -194,13 +117,17 @@ function QuickApp:initializeProperties()
     self.longitude = locationInfo.longitude
     self.apikey = self:getVariable("APIKEY")
     self.interval = 1
-    
-    self.i18n = i18n:new(api.get("/settings/info").defaultLanguage)
-    self.gui = GUI:new(self, self.i18n)
-    self.builder = DeviceBuilder:new(self)
-    self.http = HTTPClient:new({
+
+    QuickApp.toggles = Toggles:new()
+    QuickApp.i18n = i18n:new(api.get("/settings/info").defaultLanguage)
+    QuickApp.gui = GUI:new(self, QuickApp.i18n)
+    QuickApp.builder = DeviceBuilder:new(self)
+    QuickApp.http = HTTPClient:new({
         baseUrl = 'https://api.openweathermap.org/data/2.5'
     })
+
+    self:updateProperty('manufacturer', 'OpenWeather')
+    self:updateProperty('model', 'Weather provider')
 
     -- hours to miliseconds conversion
     self.interval = self:hoursToMiliseconds(self.interval)
@@ -212,23 +139,10 @@ end
 
 function QuickApp:initializeChildren()
     self.builder:initChildren({
-        ["com.fibaro.weather"] = OpenWeatherDevice,
-        ["com.fibaro.multilevelSensor"] = OpenWeatherSensor,
+        [OWSensor.class] = OWSensor,
+        [OWTemperature.class] = OWTemperature,
+        [OWWind.class] = OWWind,
+        [OWHumidity.class] = OWHumidity,
+        [OWRain.class] = OWRain,
     })
-end
-
-function QuickApp:isEnabled(item)
-    local result = string.find(',' .. self:getVariable("Devices") .. ',', ',' .. item .. ',')
-    return result ~= nil and result > 0
-end
-
-class 'OpenWeatherDevice' (QuickAppChild)
-class 'OpenWeatherSensor' (QuickAppChild)
-
-function OpenWeatherDevice:__init(device)
-    QuickAppChild.__init(self, device) 
-end
-
-function OpenWeatherSensor:__init(device)
-    QuickAppChild.__init(self, device)
 end

@@ -2,7 +2,7 @@
 
 An alternative to YR weather provider, that is default weather provider for HC3.
 
-Beside main virtual device, it provides couple other virtual devices (sensors) that show current:
+Beside weather provider, it allows to create couple other companion  devices (sensors) that show current values for:
 * Temperature
 * Wind
 * Rain
@@ -20,20 +20,9 @@ Data updates every 1 hour.
 Main device requires only an `APIKEY` to be specified.
 APIKEY can be obtained from [OpenWeather API keys](https://home.openweathermap.org/api_keys) page.
 
-To filter child devices you can use `Devices` variable where you can use specify one or more of following values:
-* temperature
-* wind
-* pressure
-* humidity
-* clouds
-* uv
-* sunrise
-* sunset
-* rain
+To enable companion devices, just toggle them using buttons. 
 
-Please specify multiple values separated by comas. Do not use any white characters!
-
-Defaults to `temperature,wind,pressure,humidity,clouds,uv,sunrise,sunset,rain`
+Configuration will be saved into global variables which guarantee persistance of devices selection.
 
 ## Changing weather provider
 
