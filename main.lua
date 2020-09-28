@@ -64,7 +64,7 @@ function QuickApp:updateDevices(data)
     -- PRESSURE
     OWSensor:get('pressure'):update({value = data.pressure, unit = 'mbar'})
     -- HUMIDITY
-    OWSensor:get('humidity'):update({value = data.humidity, unit = '%'})
+    OWHumidity:get('humidity'):update({value = data.humidity, unit = '%'})
     -- CLOUDS
     OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})
     -- RAIN
