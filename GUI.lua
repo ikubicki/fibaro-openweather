@@ -20,6 +20,10 @@ function GUI:label1Text(text, value1)
     self.app:updateView("label1", "text", string.format(self.i18n:get(text), value1))
 end
 
+function GUI:label2Render()
+    self.app:updateView("label2", "text", self.i18n:get('select-sensors'))
+end
+
 function GUI:button3Render()
     self.app:updateView('button3_1', 'text', string.format('[%s] ' .. self.i18n:get('openweather-temperature'), self:check(Toggles:get('temperature'))))
     self.app:updateView('button3_2', 'text', string.format('[%s] ' .. self.i18n:get('openweather-wind'), self:check(Toggles:get('wind'))))

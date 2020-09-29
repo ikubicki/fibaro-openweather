@@ -1,5 +1,5 @@
 --[[
-OpenWeather widget v 1.0.0
+OpenWeather widget v 1.1.0
 @author ikubicki
 ]]
 
@@ -8,6 +8,7 @@ function QuickApp:onInit()
     self:initializeChildren()
     self:trace('')
     self:trace(self.i18n:get('name'))
+    GUI:label2Render()
     GUI:button3Render()
     self:run()
 end
@@ -32,10 +33,17 @@ function QuickApp:pullOpenWeatherData()
         local data = json.decode(response.data)
         -- self:debug('today forecast', json.encode(data.daily[1]))
         -- self:debug('tomorrow forecast', json.encode(data.daily[2]))
-        self:updateProvider(data.current)
-        self:updateDevices(data.current)
-        self:updateSunInfo(data.daily[1])
-        self:updateViewElements()
+        if data.cod and data.cod >= 400 then
+            self:error(data.message)
+            self.gui:label1Text(data.message)
+            self.gui:button1Text('retry')
+        else
+            self:updateProvider(data.current)
+            self:updateDevices(data.current)
+            self:updateSunInfo(data.daily[1])
+            self:updateViewElements()
+        end
+        
     end
     self.http:get('/onecall' .. self:getUrlQueryString(), callback1)
 end
@@ -68,7 +76,7 @@ function QuickApp:updateDevices(data)
     -- CLOUDS
     OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})
     -- RAIN
-    OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
+    local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
     -- UVI
     if data.uvi ~= nil then
         OWSensor:get('uv'):update(data.uvi)
@@ -99,6 +107,7 @@ function QuickApp:toggleMetric(e)
     if e.elementName == 'button3_8' then Toggles:toggle('sunrise') end
     if e.elementName == 'button3_9' then Toggles:toggle('sunset') end
     GUI:button3Render()
+    GUI:button1Text('refresh-sensors')
 end
 
 function QuickApp:getUrlQueryString()
