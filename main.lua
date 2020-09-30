@@ -1,5 +1,5 @@
 --[[
-OpenWeather widget v 1.1.0
+OpenWeather widget v 1.1.1
 @author ikubicki
 ]]
 
