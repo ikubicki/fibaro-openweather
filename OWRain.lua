@@ -11,10 +11,9 @@ function OWRain:get(name)
 end
 
 function OWRain:extractValue(data)
-    if data == nil then
-        data = {
-            ['1h'] = 0
-        }
+    local result = 0.00
+    if data ~= nil then
+        result = data['1h']
     end
-    return data
+    return result
 end
