@@ -22,6 +22,8 @@ phrases = {
         ["openweather-sunrise"] = "Wschód słońca",
         ["openweather-sunset"] = "Zachód słońca",
         ["openweather-uv"] = "Indeks UV",
+        ['current-weather'] = "Aktualna pogoda",
+        ['forecast'] = "Prognoza +%d godzin",
     },
     en = {
         ['name'] = 'OpenWeather weather station',
@@ -42,6 +44,8 @@ phrases = {
         ["openweather-sunrise"] = "Sunrise",
         ["openweather-sunset"] = "Sunset",
         ["openweather-uv"] = "UV Index",
+        ['current-weather'] = "Current weather",
+        ['forecast'] = "Forecast +%d hours",
     },
     de = {
         ['name'] = 'OpenWeather wetterstation',
@@ -62,6 +66,8 @@ phrases = {
         ["openweather-sunrise"] = "Sonnenaufgang",
         ["openweather-sunset"] = "Sonnenuntergang",
         ["openweather-uv"] = "UV-Index",
+        ['current-weather'] = "Aktuelles Wetter",
+        ['forecast'] = "Prognose +%d stunden",
     },
     sv = {
         ['name'] = 'OpenWeather väderstation',
@@ -82,5 +88,7 @@ phrases = {
         ["openweather-sunrise"] = "Soluppgång",
         ["openweather-sunset"] = "Solnedgång",
         ["openweather-uv"] = "UV-Index",
+        ['current-weather'] = "Aktuellt väder",
+        ['forecast'] = "Prognos +%d timmar",
     }
 }

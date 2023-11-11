@@ -13,7 +13,7 @@ end
 function OWRain:extractValue(data)
     local result = 0.00
     if data ~= nil then
-        result = data['1h']
+        result = data
     end
     return result
 end

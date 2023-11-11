@@ -20,6 +20,10 @@ function GUI:label1Text(text, value1)
     self.app:updateView("label1", "text", string.format(self.i18n:get(text), value1))
 end
 
+function GUI:label3Text(text, value1)
+    self.app:updateView("label3", "text", string.format(self.i18n:get(text), value1))
+end
+
 function GUI:label2Render()
     self.app:updateView("label2", "text", self.i18n:get('select-sensors'))
 end
@@ -35,6 +39,10 @@ function GUI:button3Render()
     self.app:updateView('button3_8', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunrise'), self:check(Toggles:get('sunrise'))))
     self.app:updateView('button3_9', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunset'), self:check(Toggles:get('sunset'))))
 
+end
+
+function GUI:slider(position)
+    self.app:updateView('slider', 'value', tostring(position))
 end
 
 function GUI:check(checked)

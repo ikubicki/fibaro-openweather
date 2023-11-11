@@ -9,7 +9,7 @@ Beside weather provider, it allows to create couple other companion  devices (se
 * Pressure
 * Humidity
 * Cloud cover
-* UV index
+* UV index (deprecated)
 * Time of sunrise
 * Time of sunset
 
@@ -23,6 +23,12 @@ APIKEY can be obtained from [OpenWeather API keys](https://home.openweathermap.o
 To enable companion devices, just toggle them using buttons. 
 
 Configuration will be saved into global variables which guarantee persistance of devices selection.
+
+Optionally, you can change `Source` variable value to `OneCall`, that will use previous data endpoint. Using default value of `Weather`, uses new endpoint, that doesn't require paid subscription.
+
+## Forecast
+
+Quick application allows to use forecast up to 48 hours ahead. To adjust the forecast offset, use the slider.
 
 ## Changing weather provider
 

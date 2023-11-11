@@ -1,6 +1,7 @@
 --[[
-OpenWeather widget v 1.1.1
+OpenWeather weather station
 @author ikubicki
+@version 2.0.0
 ]]
 
 function QuickApp:onInit()
@@ -11,6 +12,9 @@ function QuickApp:onInit()
     GUI:label2Render()
     GUI:button3Render()
     self:run()
+    self:updateSlider()
+    self.gui:button1Text('refresh')
+    GUI:label1Text('name')
 end
 
 function QuickApp:run()
@@ -24,28 +28,48 @@ function QuickApp:button1Event()
     self:run()
 end
 
+function QuickApp:handleSlider(param)
+    self.mode = math.floor(param.values[1] / 5.88)
+    self:updateSlider()
+end
+
+function QuickApp:updateSlider()
+    if self.mode == 0 then
+        self.gui:label3Text("current-weather")
+    else
+        self.gui:label3Text("forecast", (self.mode - 1) * 3)
+    end
+    self.gui:slider(math.floor(self.mode * 5.89))
+end
+
 function QuickApp:pullOpenWeatherData()
     if (string.len(self.apikey) < 4) then
+        QuickApp:warning("APIKEY variable not specified")
         return false
     end
     self.gui:button1Text('please-wait')
-    local callback1 = function (response)
-        local data = json.decode(response.data)
-        -- self:debug('today forecast', json.encode(data.daily[1]))
-        -- self:debug('tomorrow forecast', json.encode(data.daily[2]))
-        if data.cod and data.cod >= 400 then
-            self:error(data.message)
-            self.gui:label1Text(data.message)
-            self.gui:button1Text('retry')
-        else
-            self:updateProvider(data.current)
-            self:updateDevices(data.current)
-            self:updateSunInfo(data.daily[1])
-            self:updateViewElements()
-        end
-        
+    local sdkFail = function(response)
+        self:error("Unable to pull OpenWeather data")
+        self.gui:label1Text('OpenWeather API error')
+        self.gui:button1Text('retry')
     end
-    self.http:get('/onecall' .. self:getUrlQueryString(), callback1)
+    local sdkSuccess = function (data)
+        QuickApp:debug(json.encode(data))
+        self:updateProvider(data)
+        self:updateDevices(data)
+        self:updateSunInfo(data)
+        self:updateViewElements()
+    end
+    if self.mode == 0 then
+        if self.source == 'OneCall' then
+            self.sdk:OneCall(sdkSuccess)
+        else
+            self.sdk:Weather(sdkSuccess)
+        end
+    else 
+        self.sdk:Forecast(self.mode, sdkSuccess)
+    end
+    
 end
 
 function QuickApp:updateViewElements()
@@ -54,13 +78,12 @@ function QuickApp:updateViewElements()
 end
 
 function QuickApp:updateProvider(data)
-    local weatherInfo = data.weather[1]
     -- WEATHER PROVIDER
-    self:updateProperty("WeatherCondition", string.lower(weatherInfo.main))
-    self:updateProperty("ConditionCode", ConditionCodes:get(weatherInfo.id, weatherInfo.icon))
+    self:updateProperty("WeatherCondition", string.lower(data.weather_main))
+    self:updateProperty("ConditionCode", ConditionCodes:get(data.weather_id, data.weather_icon))
     self:updateProperty("Temperature", data.temp)
     self:updateProperty("Humidity", data.humidity)
-    self:updateProperty("Wind", data.wind_speed * 3.6)
+    self:updateProperty("Wind", data.wind_speed)
     self:updateProperty("Pressure", data.pressure)
 end
 
@@ -68,7 +91,7 @@ function QuickApp:updateDevices(data)
     -- TEMPERATURE
     OWTemperature:get('temperature'):update({value = data.temp})
     -- WIND
-    OWWind:get('wind'):update({value = data.wind_speed * 3.6, unit = 'km/h'})
+    OWWind:get('wind'):update({value = data.wind_speed, unit = 'km/h'})
     -- PRESSURE
     OWSensor:get('pressure'):update({value = data.pressure, unit = 'mbar'})
     -- HUMIDITY
@@ -78,15 +101,7 @@ function QuickApp:updateDevices(data)
     -- RAIN
     local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})
     -- UVI
-    if data.uvi ~= nil then
-        OWSensor:get('uv'):update(data.uvi)
-    elseif Toggles:get('uv') then
-        local uviCallback = function (response)
-            local data = json.decode(response.data)
-            OWSensor:get('uv'):update(data.uvi)
-        end
-        self.http:get('/uvi' .. self:getUrlQueryString(), uviCallback)
-    end
+    OWSensor:get('uv'):update(data.uvi)
 end
 
 function QuickApp:updateSunInfo(data)
@@ -110,30 +125,21 @@ function QuickApp:toggleMetric(e)
     GUI:button1Text('refresh-sensors')
 end
 
-function QuickApp:getUrlQueryString()
-    local string = '?appid=' .. self.apikey
-    string = string .. '&lat=' .. self.latitude
-    string = string .. '&lon=' .. self.longitude
-    string = string .. '&units=metric'
-    string = string .. '&lang=pl'
-    string = string .. '&exclude=minutely,hourly'
-    return string
-end
-
 function QuickApp:initializeProperties()
     local locationInfo = api.get('/settings/location')
+    self.mode = 0
     self.latitude = locationInfo.latitude
     self.longitude = locationInfo.longitude
     self.apikey = self:getVariable("APIKEY")
+    self.source = self:getVariable("Source")
+    self.lang = api.get("/settings/info").defaultLanguage
     self.interval = 1
 
     QuickApp.toggles = Toggles:new()
-    QuickApp.i18n = i18n:new(api.get("/settings/info").defaultLanguage)
+    QuickApp.i18n = i18n:new(self.lang)
+    QuickApp.sdk = SDK:new(self)
     QuickApp.gui = GUI:new(self, QuickApp.i18n)
     QuickApp.builder = DeviceBuilder:new(self)
-    QuickApp.http = HTTPClient:new({
-        baseUrl = 'https://api.openweathermap.org/data/2.5'
-    })
 
     self:updateProperty('manufacturer', 'OpenWeather')
     self:updateProperty('model', 'Weather provider')

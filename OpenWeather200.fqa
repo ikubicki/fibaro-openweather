@@ -10,7 +10,7 @@
                         "style": {
                             "height": "0"
                         },
-                        "title": "OpenWeather provider"
+                        "title": "OpenWeatherProvider"
                     },
                     "sections": {
                         "items": [
@@ -21,8 +21,9 @@
                                         "style": {
                                             "weight": "1.2"
                                         },
-                                        "text": "OpenWeather widget",
-                                        "type": "label"
+                                        "text": "OpenWeather station",
+                                        "type": "label",
+                                        "visible": true
                                     },
                                     {
                                         "style": {
@@ -44,7 +45,8 @@
                                             "weight": "1.2"
                                         },
                                         "text": "Refresh",
-                                        "type": "button"
+                                        "type": "button",
+                                        "visible": true
                                     },
                                     {
                                         "style": {
@@ -66,7 +68,8 @@
                                             "weight": "1.2"
                                         },
                                         "text": "Click on buttons to select sensors:",
-                                        "type": "label"
+                                        "type": "label",
+                                        "visible": true
                                     },
                                     {
                                         "style": {
@@ -198,7 +201,8 @@
                                                     "weight": "0.33"
                                                 },
                                                 "text": "SUNS [ ]",
-                                                "type": "button"
+                                                "type": "button",
+                                                "visible": true
                                             }
                                         ],
                                         "style": {
@@ -217,12 +221,60 @@
                                     "weight": "1.2"
                                 },
                                 "type": "vertical"
+                            },
+                            {
+                                "components": [
+                                    {
+                                        "name": "label3",
+                                        "style": {
+                                            "weight": "1.2"
+                                        },
+                                        "text": "Current weather",
+                                        "type": "label",
+                                        "visible": true
+                                    },
+                                    {
+                                        "style": {
+                                            "weight": "0.5"
+                                        },
+                                        "type": "space"
+                                    }
+                                ],
+                                "style": {
+                                    "weight": "1.2"
+                                },
+                                "type": "vertical"
+                            },
+                            {
+                                "components": [
+                                    {
+                                        "max": "100",
+                                        "min": "0",
+                                        "name": "slider",
+                                        "style": {
+                                            "weight": "1.2"
+                                        },
+                                        "text": "",
+                                        "type": "slider",
+                                        "visible": true
+                                    },
+                                    {
+                                        "style": {
+                                            "weight": "0.5"
+                                        },
+                                        "type": "space"
+                                    }
+                                ],
+                                "style": {
+                                    "weight": "1.2"
+                                },
+                                "type": "vertical"
                             }
                         ]
                     }
                 },
                 "head": {
-                    "title": "OpenWeather provider"
+                    "title": "OpenWeatherProvider"
                 }
             }
         },
@@ -276,12 +328,23 @@
                 "callback": "toggleMetric",
                 "eventType": "onReleased",
                 "name": "button3_9"
+            },
+            {
+                "callback": "handleSlider",
+                "eventType": "onChanged",
+                "name": "slider"
             }
         ],
         "quickAppVariables": [
             {
                 "name": "APIKEY",
-                "value": "-"
+                "type": "password",
+                "value": ""
+            },
+            {
+                "name": "Source",
+                "type": "string",
+                "value": "Weather"
             }
         ],
         "typeTemplateInitialized": true
@@ -290,8 +353,8 @@
         {
             "name": "main",
             "isMain": true,
-            "isOpen": true,
-            "content": "--[[\nOpenWeather widget v 1.1.2\n@author ikubicki\n]]\n\nfunction QuickApp:onInit()\n    self:initializeProperties()\n    self:initializeChildren()\n    self:trace('')\n    self:trace(self.i18n:get('name'))\n    GUI:label2Render()\n    GUI:button3Render()\n    self:run()\nend\n\nfunction QuickApp:run()\n    self:pullOpenWeatherData()\n    if (self.interval > 0) then\n        fibaro.setTimeout(self.interval, function() self:run() end)\n    end\nend\n\nfunction QuickApp:button1Event()\n    self:run()\nend\n\nfunction QuickApp:pullOpenWeatherData()\n    if (string.len(self.apikey) < 4) then\n        return false\n    end\n    self.gui:button1Text('please-wait')\n    local callback1 = function (response)\n        local data = json.decode(response.data)\n        -- self:debug('today forecast', json.encode(data.daily[1]))\n        -- self:debug('tomorrow forecast', json.encode(data.daily[2]))\n        if data.cod and data.cod >= 400 then\n            self:error(data.message)\n            self.gui:label1Text(data.message)\n            self.gui:button1Text('retry')\n        else\n            self:updateProvider(data.current)\n            self:updateDevices(data.current)\n            self:updateSunInfo(data.daily[1])\n            self:updateViewElements()\n        end\n        \n    end\n    self.http:get('/onecall' .. self:getUrlQueryString(), callback1)\nend\n\nfunction QuickApp:updateViewElements()\n    self.gui:label1Text('last-update', os.date('%Y-%m-%d %H:%M:%S'))\n    self.gui:button1Text('refresh')\nend\n\nfunction QuickApp:updateProvider(data)\n    local weatherInfo = data.weather[1]\n    -- WEATHER PROVIDER\n    self:updateProperty(\"WeatherCondition\", string.lower(weatherInfo.main))\n    self:updateProperty(\"ConditionCode\", ConditionCodes:get(weatherInfo.id, weatherInfo.icon))\n    self:updateProperty(\"Temperature\", data.temp)\n    self:updateProperty(\"Humidity\", data.humidity)\n    self:updateProperty(\"Wind\", data.wind_speed * 3.6)\n    self:updateProperty(\"Pressure\", data.pressure)\nend\n\nfunction QuickApp:updateDevices(data)\n    -- TEMPERATURE\n    OWTemperature:get('temperature'):update({value = data.temp})\n    -- WIND\n    OWWind:get('wind'):update({value = data.wind_speed * 3.6, unit = 'km/h'})\n    -- PRESSURE\n    OWSensor:get('pressure'):update({value = data.pressure, unit = 'mbar'})\n    -- HUMIDITY\n    OWHumidity:get('humidity'):update({value = data.humidity, unit = '%'})\n    -- CLOUDS\n    OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})\n    -- RAIN\n    local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})\n    -- UVI\n    if data.uvi ~= nil then\n        OWSensor:get('uv'):update(data.uvi)\n    elseif Toggles:get('uv') then\n        local uviCallback = function (response)\n            local data = json.decode(response.data)\n            OWSensor:get('uv'):update(data.uvi)\n        end\n        self.http:get('/uvi' .. self:getUrlQueryString(), uviCallback)\n    end\nend\n\nfunction QuickApp:updateSunInfo(data)\n    -- SUNRISE\n    OWSensor:get('sunrise'):update(tonumber(os.date('%H.%M', data.sunrise)))\n    -- SUNSET\n    OWSensor:get('sunset'):update(tonumber(os.date('%H.%M', data.sunset)))\nend\n\nfunction QuickApp:toggleMetric(e)\n    if e.elementName == 'button3_1' then Toggles:toggle('temperature') end\n    if e.elementName == 'button3_2' then Toggles:toggle('wind') end\n    if e.elementName == 'button3_3' then Toggles:toggle('pressure') end\n    if e.elementName == 'button3_4' then Toggles:toggle('humidity') end\n    if e.elementName == 'button3_5' then Toggles:toggle('clouds') end\n    if e.elementName == 'button3_6' then Toggles:toggle('rain') end\n    if e.elementName == 'button3_7' then Toggles:toggle('uv') end\n    if e.elementName == 'button3_8' then Toggles:toggle('sunrise') end\n    if e.elementName == 'button3_9' then Toggles:toggle('sunset') end\n    GUI:button3Render()\n    GUI:button1Text('refresh-sensors')\nend\n\nfunction QuickApp:getUrlQueryString()\n    local string = '?appid=' .. self.apikey\n    string = string .. '&lat=' .. self.latitude\n    string = string .. '&lon=' .. self.longitude\n    string = string .. '&units=metric'\n    string = string .. '&lang=pl'\n    string = string .. '&exclude=minutely,hourly'\n    return string\nend\n\nfunction QuickApp:initializeProperties()\n    local locationInfo = api.get('/settings/location')\n    self.latitude = locationInfo.latitude\n    self.longitude = locationInfo.longitude\n    self.apikey = self:getVariable(\"APIKEY\")\n    self.interval = 1\n\n    QuickApp.toggles = Toggles:new()\n    QuickApp.i18n = i18n:new(api.get(\"/settings/info\").defaultLanguage)\n    QuickApp.gui = GUI:new(self, QuickApp.i18n)\n    QuickApp.builder = DeviceBuilder:new(self)\n    QuickApp.http = HTTPClient:new({\n        baseUrl = 'https://api.openweathermap.org/data/2.5'\n    })\n\n    self:updateProperty('manufacturer', 'OpenWeather')\n    self:updateProperty('model', 'Weather provider')\n\n    -- hours to miliseconds conversion\n    self.interval = self:hoursToMiliseconds(self.interval)\nend\n\nfunction QuickApp:hoursToMiliseconds(hours)\n    return hours * 3600000\nend\n\nfunction QuickApp:initializeChildren()\n    self.builder:initChildren({\n        [OWSensor.class] = OWSensor,\n        [OWTemperature.class] = OWTemperature,\n        [OWWind.class] = OWWind,\n        [OWHumidity.class] = OWHumidity,\n        [OWRain.class] = OWRain,\n    })\nend"
+            "isOpen": false,
+            "content": "--[[\nOpenWeather weather station\n@author ikubicki\n@version 2.0.0\n]]\n\nfunction QuickApp:onInit()\n    self:initializeProperties()\n    self:initializeChildren()\n    self:trace('')\n    self:trace(self.i18n:get('name'))\n    GUI:label2Render()\n    GUI:button3Render()\n    self:run()\n    self:updateSlider()\n    self.gui:button1Text('refresh')\n    GUI:label1Text('name')\nend\n\nfunction QuickApp:run()\n    self:pullOpenWeatherData()\n    if (self.interval > 0) then\n        fibaro.setTimeout(self.interval, function() self:run() end)\n    end\nend\n\nfunction QuickApp:button1Event()\n    self:run()\nend\n\nfunction QuickApp:handleSlider(param)\n    self.mode = math.floor(param.values[1] / 5.88)\n    self:updateSlider()\nend\n\nfunction QuickApp:updateSlider()\n    if self.mode == 0 then\n        self.gui:label3Text(\"current-weather\")\n    else\n        self.gui:label3Text(\"forecast\", (self.mode - 1) * 3)\n    end\n    self.gui:slider(math.floor(self.mode * 5.89))\nend\n\nfunction QuickApp:pullOpenWeatherData()\n    if (string.len(self.apikey) < 4) then\n        QuickApp:warning(\"APIKEY variable not specified\")\n        return false\n    end\n    self.gui:button1Text('please-wait')\n    local sdkFail = function(response)\n        self:error(\"Unable to pull OpenWeather data\")\n        self.gui:label1Text('OpenWeather API error')\n        self.gui:button1Text('retry')\n    end\n    local sdkSuccess = function (data)\n        QuickApp:debug(json.encode(data))\n        self:updateProvider(data)\n        self:updateDevices(data)\n        self:updateSunInfo(data)\n        self:updateViewElements()\n    end\n    if self.mode == 0 then\n        if self.source == 'OneCall' then\n            self.sdk:OneCall(sdkSuccess)\n        else\n            self.sdk:Weather(sdkSuccess)\n        end\n    else \n        self.sdk:Forecast(self.mode, sdkSuccess)\n    end\n    \nend\n\nfunction QuickApp:updateViewElements()\n    self.gui:label1Text('last-update', os.date('%Y-%m-%d %H:%M:%S'))\n    self.gui:button1Text('refresh')\nend\n\nfunction QuickApp:updateProvider(data)\n    -- WEATHER PROVIDER\n    self:updateProperty(\"WeatherCondition\", string.lower(data.weather_main))\n    self:updateProperty(\"ConditionCode\", ConditionCodes:get(data.weather_id, data.weather_icon))\n    self:updateProperty(\"Temperature\", data.temp)\n    self:updateProperty(\"Humidity\", data.humidity)\n    self:updateProperty(\"Wind\", data.wind_speed)\n    self:updateProperty(\"Pressure\", data.pressure)\nend\n\nfunction QuickApp:updateDevices(data)\n    -- TEMPERATURE\n    OWTemperature:get('temperature'):update({value = data.temp})\n    -- WIND\n    OWWind:get('wind'):update({value = data.wind_speed, unit = 'km/h'})\n    -- PRESSURE\n    OWSensor:get('pressure'):update({value = data.pressure, unit = 'mbar'})\n    -- HUMIDITY\n    OWHumidity:get('humidity'):update({value = data.humidity, unit = '%'})\n    -- CLOUDS\n    OWSensor:get('clouds'):update({value = data.clouds, unit = '%'})\n    -- RAIN\n    local rain = OWRain:get('rain'):update({value = OWRain:extractValue(data.rain), unit = 'mm'})\n    -- UVI\n    OWSensor:get('uv'):update(data.uvi)\nend\n\nfunction QuickApp:updateSunInfo(data)\n    -- SUNRISE\n    OWSensor:get('sunrise'):update(tonumber(os.date('%H.%M', data.sunrise)))\n    -- SUNSET\n    OWSensor:get('sunset'):update(tonumber(os.date('%H.%M', data.sunset)))\nend\n\nfunction QuickApp:toggleMetric(e)\n    if e.elementName == 'button3_1' then Toggles:toggle('temperature') end\n    if e.elementName == 'button3_2' then Toggles:toggle('wind') end\n    if e.elementName == 'button3_3' then Toggles:toggle('pressure') end\n    if e.elementName == 'button3_4' then Toggles:toggle('humidity') end\n    if e.elementName == 'button3_5' then Toggles:toggle('clouds') end\n    if e.elementName == 'button3_6' then Toggles:toggle('rain') end\n    if e.elementName == 'button3_7' then Toggles:toggle('uv') end\n    if e.elementName == 'button3_8' then Toggles:toggle('sunrise') end\n    if e.elementName == 'button3_9' then Toggles:toggle('sunset') end\n    GUI:button3Render()\n    GUI:button1Text('refresh-sensors')\nend\n\nfunction QuickApp:initializeProperties()\n    local locationInfo = api.get('/settings/location')\n    self.mode = 0\n    self.latitude = locationInfo.latitude\n    self.longitude = locationInfo.longitude\n    self.apikey = self:getVariable(\"APIKEY\")\n    self.source = self:getVariable(\"Source\")\n    self.lang = api.get(\"/settings/info\").defaultLanguage\n    self.interval = 1\n\n    QuickApp.toggles = Toggles:new()\n    QuickApp.i18n = i18n:new(self.lang)\n    QuickApp.sdk = SDK:new(self)\n    QuickApp.gui = GUI:new(self, QuickApp.i18n)\n    QuickApp.builder = DeviceBuilder:new(self)\n\n    self:updateProperty('manufacturer', 'OpenWeather')\n    self:updateProperty('model', 'Weather provider')\n\n    -- hours to miliseconds conversion\n    self.interval = self:hoursToMiliseconds(self.interval)\nend\n\nfunction QuickApp:hoursToMiliseconds(hours)\n    return hours * 3600000\nend\n\nfunction QuickApp:initializeChildren()\n    self.builder:initChildren({\n        [OWSensor.class] = OWSensor,\n        [OWTemperature.class] = OWTemperature,\n        [OWWind.class] = OWWind,\n        [OWHumidity.class] = OWHumidity,\n        [OWRain.class] = OWRain,\n    })\nend"
         },
         {
             "name": "HTTPClient",
@@ -327,7 +390,7 @@
             "name": "GUI",
             "isMain": false,
             "isOpen": false,
-            "content": "--[[\r\nGUI utility\r\n@author ikubicki\r\n]]\r\n\r\nclass 'GUI'\r\n\r\nfunction GUI:new(app, i18n)\r\n    self.app = app\r\n    self.i18n = i18n\r\n    return self\r\nend\r\n\r\nfunction GUI:button1Text(text)\r\n    self.app:updateView(\"button1\", \"text\", self.i18n:get(text))\r\nend\r\n\r\nfunction GUI:label1Text(text, value1)\r\n    if value1 == nil then value1 = 'N/A' end\r\n    self.app:updateView(\"label1\", \"text\", string.format(self.i18n:get(text), value1))\r\nend\r\n\r\nfunction GUI:label2Render()\r\n    self.app:updateView(\"label2\", \"text\", self.i18n:get('select-sensors'))\r\nend\r\n\r\nfunction GUI:button3Render()\r\n    self.app:updateView('button3_1', 'text', string.format('[%s] ' .. self.i18n:get('openweather-temperature'), self:check(Toggles:get('temperature'))))\r\n    self.app:updateView('button3_2', 'text', string.format('[%s] ' .. self.i18n:get('openweather-wind'), self:check(Toggles:get('wind'))))\r\n    self.app:updateView('button3_3', 'text', string.format('[%s] ' .. self.i18n:get('openweather-pressure'), self:check(Toggles:get('pressure'))))\r\n    self.app:updateView('button3_4', 'text', string.format('[%s] ' .. self.i18n:get('openweather-humidity'), self:check(Toggles:get('humidity'))))\r\n    self.app:updateView('button3_5', 'text', string.format('[%s] ' .. self.i18n:get('openweather-clouds'), self:check(Toggles:get('clouds'))))\r\n    self.app:updateView('button3_6', 'text', string.format('[%s] ' .. self.i18n:get('openweather-rain'), self:check(Toggles:get('rain'))))\r\n    self.app:updateView('button3_7', 'text', string.format('[%s] ' .. self.i18n:get('openweather-uv'), self:check(Toggles:get('uv'))))\r\n    self.app:updateView('button3_8', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunrise'), self:check(Toggles:get('sunrise'))))\r\n    self.app:updateView('button3_9', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunset'), self:check(Toggles:get('sunset'))))\r\n\r\nend\r\n\r\nfunction GUI:check(checked)\r\n    if checked then return 'x' else return ' ' end\r\nend"
+            "content": "--[[\r\nGUI utility\r\n@author ikubicki\r\n]]\r\n\r\nclass 'GUI'\r\n\r\nfunction GUI:new(app, i18n)\r\n    self.app = app\r\n    self.i18n = i18n\r\n    return self\r\nend\r\n\r\nfunction GUI:button1Text(text)\r\n    self.app:updateView(\"button1\", \"text\", self.i18n:get(text))\r\nend\r\n\r\nfunction GUI:label1Text(text, value1)\r\n    if value1 == nil then value1 = 'N/A' end\r\n    self.app:updateView(\"label1\", \"text\", string.format(self.i18n:get(text), value1))\r\nend\r\n\r\nfunction GUI:label3Text(text, value1)\r\n    self.app:updateView(\"label3\", \"text\", string.format(self.i18n:get(text), value1))\r\nend\r\n\r\nfunction GUI:label2Render()\r\n    self.app:updateView(\"label2\", \"text\", self.i18n:get('select-sensors'))\r\nend\r\n\r\nfunction GUI:button3Render()\r\n    self.app:updateView('button3_1', 'text', string.format('[%s] ' .. self.i18n:get('openweather-temperature'), self:check(Toggles:get('temperature'))))\r\n    self.app:updateView('button3_2', 'text', string.format('[%s] ' .. self.i18n:get('openweather-wind'), self:check(Toggles:get('wind'))))\r\n    self.app:updateView('button3_3', 'text', string.format('[%s] ' .. self.i18n:get('openweather-pressure'), self:check(Toggles:get('pressure'))))\r\n    self.app:updateView('button3_4', 'text', string.format('[%s] ' .. self.i18n:get('openweather-humidity'), self:check(Toggles:get('humidity'))))\r\n    self.app:updateView('button3_5', 'text', string.format('[%s] ' .. self.i18n:get('openweather-clouds'), self:check(Toggles:get('clouds'))))\r\n    self.app:updateView('button3_6', 'text', string.format('[%s] ' .. self.i18n:get('openweather-rain'), self:check(Toggles:get('rain'))))\r\n    self.app:updateView('button3_7', 'text', string.format('[%s] ' .. self.i18n:get('openweather-uv'), self:check(Toggles:get('uv'))))\r\n    self.app:updateView('button3_8', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunrise'), self:check(Toggles:get('sunrise'))))\r\n    self.app:updateView('button3_9', 'text', string.format('[%s] ' .. self.i18n:get('openweather-sunset'), self:check(Toggles:get('sunset'))))\r\n\r\nend\r\n\r\nfunction GUI:slider(position)\r\n    self.app:updateView('slider', 'value', tostring(position))\r\nend\r\n\r\nfunction GUI:check(checked)\r\n    if checked then return 'x' else return ' ' end\r\nend"
         },
         {
             "name": "OWSensor",
@@ -357,7 +420,7 @@
             "name": "OWRain",
             "isMain": false,
             "isOpen": false,
-            "content": "class 'OWRain' (OWSensor)\r\n\r\nOWRain.class = 'com.fibaro.rainSensor'\r\n\r\nfunction OWRain:__init(device)\r\n    QuickAppChild.__init(self, device)\r\nend\r\n\r\nfunction OWRain:get(name)\r\n    return OWSensor:get(name, self.class)\r\nend\r\n\r\nfunction OWRain:extractValue(data)\r\n    local result = 0.00\r\n    if data ~= nil then\r\n        result = data['1h']\r\n    end\r\n    return result\r\nend"
+            "content": "class 'OWRain' (OWSensor)\r\n\r\nOWRain.class = 'com.fibaro.rainSensor'\r\n\r\nfunction OWRain:__init(device)\r\n    QuickAppChild.__init(self, device)\r\nend\r\n\r\nfunction OWRain:get(name)\r\n    return OWSensor:get(name, self.class)\r\nend\r\n\r\nfunction OWRain:extractValue(data)\r\n    local result = 0.00\r\n    if data ~= nil then\r\n        result = data\r\n    end\r\n    return result\r\nend"
         },
         {
             "name": "Toggles",
@@ -369,7 +432,13 @@
             "name": "phrases",
             "isMain": false,
             "isOpen": false,
-            "content": "--[[\r\nTranslation phrases\r\n@author ikubicki\r\n]]\r\nphrases = {\r\n    pl = {\r\n        ['name'] = 'Stacja pogodowa OpenWeather',\r\n        ['refresh'] = 'Odśwież',\r\n        ['refresh-sensors'] = 'Odśwież sensory',\r\n        ['retry'] = 'Ponów',\r\n        ['last-update'] = 'Ostatnia aktualizacja: %s',\r\n        ['please-wait'] = 'Proszę czekać...',\r\n        ['device-updated'] = 'Zaktualizowano %s',\r\n        ['select-sensors'] = 'Kliknij w przyciski aby wybrać sensory:',\r\n        [\"openweather-provider\"] = \"Stacja OpenWeather\",\r\n        [\"openweather-temperature\"] = \"Temperatura\",\r\n        [\"openweather-pressure\"] = \"Ciśnienie\",\r\n        [\"openweather-humidity\"] = \"Wilgotność\",\r\n        [\"openweather-wind\"] = \"Wiatr\",\r\n        [\"openweather-rain\"] = \"Opady\",\r\n        [\"openweather-clouds\"] = \"Zachmurzenie\",\r\n        [\"openweather-sunrise\"] = \"Wschód słońca\",\r\n        [\"openweather-sunset\"] = \"Zachód słońca\",\r\n        [\"openweather-uv\"] = \"Indeks UV\",\r\n    },\r\n    en = {\r\n        ['name'] = 'OpenWeather weather station',\r\n        ['refresh'] = 'Refresh',\r\n        ['refresh-sensors'] = 'Refresh sensors',\r\n        ['retry'] = 'Retry',\r\n        ['last-update'] = 'Last update at %s',\r\n        ['please-wait'] = 'Please wait...',\r\n        ['device-updated'] = '%s updated',\r\n        ['select-sensors'] = 'Click on buttons to select sensors:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperature\",\r\n        [\"openweather-pressure\"] = \"Pressure\",\r\n        [\"openweather-humidity\"] = \"Humidity\",\r\n        [\"openweather-wind\"] = \"Wind\",\r\n        [\"openweather-rain\"] = \"Rain\",\r\n        [\"openweather-clouds\"] = \"Clouds\",\r\n        [\"openweather-sunrise\"] = \"Sunrise\",\r\n        [\"openweather-sunset\"] = \"Sunset\",\r\n        [\"openweather-uv\"] = \"UV Index\",\r\n    },\r\n    de = {\r\n        ['name'] = 'OpenWeather wetterstation',\r\n        ['refresh'] = 'Aktualisieren',\r\n        ['refresh-sensors'] = 'Sensoren aktualisieren',\r\n        ['retry'] = 'Wiederholen',\r\n        ['last-update'] = 'Letztes update: %s',\r\n        ['please-wait'] = 'Ein moment bitte...',\r\n        ['device-updated'] = '%s aktualisiert',\r\n        ['select-sensors'] = 'Klicken Sie auf die Schaltflächen, um Sensoren auszuwählen:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperatur\",\r\n        [\"openweather-pressure\"] = \"Luftdruck\",\r\n        [\"openweather-humidity\"] = \"Luftfeuchtigkeit\",\r\n        [\"openweather-wind\"] = \"Windgeschwindigkeit\",\r\n        [\"openweather-rain\"] = \"Regenfall\",\r\n        [\"openweather-clouds\"] = \"Wolkig\",\r\n        [\"openweather-sunrise\"] = \"Sonnenaufgang\",\r\n        [\"openweather-sunset\"] = \"Sonnenuntergang\",\r\n        [\"openweather-uv\"] = \"UV-Index\",\r\n    },\r\n    sv = {\r\n        ['name'] = 'OpenWeather väderstation',\r\n        ['refresh'] = 'Uppdatera',\r\n        ['refresh-sensors'] = 'Uppdatera sensorer',\r\n        ['retry'] = 'Försök igen',\r\n        ['last-update'] = 'Senaste uppdatering %s',\r\n        ['please-wait'] = 'Vänligen vänta...',\r\n        ['device-updated'] = '%s uppdaterad',\r\n        ['select-sensors'] = 'Klicka på knapparna för att välja sensorer:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperatur\",\r\n        [\"openweather-pressure\"] = \"Lufttryck\",\r\n        [\"openweather-humidity\"] = \"Fuktighet\",\r\n        [\"openweather-wind\"] = \"Vind\",\r\n        [\"openweather-rain\"] = \"Regn\",\r\n        [\"openweather-clouds\"] = \"Moln\",\r\n        [\"openweather-sunrise\"] = \"Soluppgång\",\r\n        [\"openweather-sunset\"] = \"Solnedgång\",\r\n        [\"openweather-uv\"] = \"UV-Index\",\r\n    }\r\n}"
+            "content": "--[[\r\nTranslation phrases\r\n@author ikubicki\r\n]]\r\nphrases = {\r\n    pl = {\r\n        ['name'] = 'Stacja pogodowa OpenWeather',\r\n        ['refresh'] = 'Odśwież',\r\n        ['refresh-sensors'] = 'Odśwież sensory',\r\n        ['retry'] = 'Ponów',\r\n        ['last-update'] = 'Ostatnia aktualizacja: %s',\r\n        ['please-wait'] = 'Proszę czekać...',\r\n        ['device-updated'] = 'Zaktualizowano %s',\r\n        ['select-sensors'] = 'Kliknij w przyciski aby wybrać sensory:',\r\n        [\"openweather-provider\"] = \"Stacja OpenWeather\",\r\n        [\"openweather-temperature\"] = \"Temperatura\",\r\n        [\"openweather-pressure\"] = \"Ciśnienie\",\r\n        [\"openweather-humidity\"] = \"Wilgotność\",\r\n        [\"openweather-wind\"] = \"Wiatr\",\r\n        [\"openweather-rain\"] = \"Opady\",\r\n        [\"openweather-clouds\"] = \"Zachmurzenie\",\r\n        [\"openweather-sunrise\"] = \"Wschód słońca\",\r\n        [\"openweather-sunset\"] = \"Zachód słońca\",\r\n        [\"openweather-uv\"] = \"Indeks UV\",\r\n        ['current-weather'] = \"Aktualna pogoda\",\r\n        ['forecast'] = \"Prognoza +%d godzin\",\r\n    },\r\n    en = {\r\n        ['name'] = 'OpenWeather weather station',\r\n        ['refresh'] = 'Refresh',\r\n        ['refresh-sensors'] = 'Refresh sensors',\r\n        ['retry'] = 'Retry',\r\n        ['last-update'] = 'Last update at %s',\r\n        ['please-wait'] = 'Please wait...',\r\n        ['device-updated'] = '%s updated',\r\n        ['select-sensors'] = 'Click on buttons to select sensors:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperature\",\r\n        [\"openweather-pressure\"] = \"Pressure\",\r\n        [\"openweather-humidity\"] = \"Humidity\",\r\n        [\"openweather-wind\"] = \"Wind\",\r\n        [\"openweather-rain\"] = \"Rain\",\r\n        [\"openweather-clouds\"] = \"Clouds\",\r\n        [\"openweather-sunrise\"] = \"Sunrise\",\r\n        [\"openweather-sunset\"] = \"Sunset\",\r\n        [\"openweather-uv\"] = \"UV Index\",\r\n        ['current-weather'] = \"Current weather\",\r\n        ['forecast'] = \"Forecast +%d hours\",\r\n    },\r\n    de = {\r\n        ['name'] = 'OpenWeather wetterstation',\r\n        ['refresh'] = 'Aktualisieren',\r\n        ['refresh-sensors'] = 'Sensoren aktualisieren',\r\n        ['retry'] = 'Wiederholen',\r\n        ['last-update'] = 'Letztes update: %s',\r\n        ['please-wait'] = 'Ein moment bitte...',\r\n        ['device-updated'] = '%s aktualisiert',\r\n        ['select-sensors'] = 'Klicken Sie auf die Schaltflächen, um Sensoren auszuwählen:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperatur\",\r\n        [\"openweather-pressure\"] = \"Luftdruck\",\r\n        [\"openweather-humidity\"] = \"Luftfeuchtigkeit\",\r\n        [\"openweather-wind\"] = \"Windgeschwindigkeit\",\r\n        [\"openweather-rain\"] = \"Regenfall\",\r\n        [\"openweather-clouds\"] = \"Wolkig\",\r\n        [\"openweather-sunrise\"] = \"Sonnenaufgang\",\r\n        [\"openweather-sunset\"] = \"Sonnenuntergang\",\r\n        [\"openweather-uv\"] = \"UV-Index\",\r\n        ['current-weather'] = \"Aktuelles Wetter\",\r\n        ['forecast'] = \"Prognose +%d stunden\",\r\n    },\r\n    sv = {\r\n        ['name'] = 'OpenWeather väderstation',\r\n        ['refresh'] = 'Uppdatera',\r\n        ['refresh-sensors'] = 'Uppdatera sensorer',\r\n        ['retry'] = 'Försök igen',\r\n        ['last-update'] = 'Senaste uppdatering %s',\r\n        ['please-wait'] = 'Vänligen vänta...',\r\n        ['device-updated'] = '%s uppdaterad',\r\n        ['select-sensors'] = 'Klicka på knapparna för att välja sensorer:',\r\n        [\"openweather-provider\"] = \"OpenWeather station\",\r\n        [\"openweather-temperature\"] = \"Temperatur\",\r\n        [\"openweather-pressure\"] = \"Lufttryck\",\r\n        [\"openweather-humidity\"] = \"Fuktighet\",\r\n        [\"openweather-wind\"] = \"Vind\",\r\n        [\"openweather-rain\"] = \"Regn\",\r\n        [\"openweather-clouds\"] = \"Moln\",\r\n        [\"openweather-sunrise\"] = \"Soluppgång\",\r\n        [\"openweather-sunset\"] = \"Solnedgång\",\r\n        [\"openweather-uv\"] = \"UV-Index\",\r\n        ['current-weather'] = \"Aktuellt väder\",\r\n        ['forecast'] = \"Prognos +%d timmar\",\r\n    }\r\n}"
+        },
+        {
+            "name": "SDK",
+            "isMain": false,
+            "isOpen": false,
+            "content": "--[[\nOpenWeather SDK\n@author ikubicki\n]]\n\nclass 'SDK'\n\nfunction SDK:new(app)\n    self.app = app\n    self.http = HTTPClient:new({\n        baseUrl = 'https://api.openweathermap.org/data/2.5'\n    })\n    return self\nend\n\nfunction SDK:formatOneCallResponse(data)\n    local collection = {\n        source = 'onecall',\n        type = 'current',\n        temp = data.current['temp'],\n        humidity = data.current['humidity'],\n        wind_speed = data.current['wind_speed'] * 3.6,\n        wind_gust = 0,\n        pressure = data.current['pressure'],\n        clouds = data.current['clouds'],\n        rain = 0.0,\n        uvi = data.current['uvi'],\n        weather_id = data.current.weather[1]['id'],\n        weather_main = data.current.weather[1]['main'],\n        weather_icon = data.current.weather[1]['icon'],\n        sunrise = data.daily[1]['sunrise'],\n        sunset = data.daily[1]['sunset'],\n    }\n\n    if data.current['rain'] and data.current['rain']['1h'] then\n        collection['rain'] = data.current['rain']['1h']\n    end\n    if data.wind and data.current['wind_gust'] then\n        collection['wind_gust'] = data.current['wind_gust'] * 3.6\n    end\n    return collection\nend\n\nfunction SDK:OneCall(success, fail)\n    local url = '/onecall' .. self:getUrlQueryString()\n    local wrappedCallback = function(response)\n        if response.status >= 299 then\n            if fail then\n                fail(response)\n            end\n            return\n        end\n        local data = json.decode(response.data)\n        if success then\n            success(SDK:formatOneCallResponse(data))\n        end\n        return\n    end\n    self.http:get(url, wrappedCallback, fail)\nend\n\nfunction SDK:formatWeatherResponse(data)\n    local collection = {\n        source = 'weather',\n        type = 'current',\n        temp = data.main['temp'],\n        humidity = data.main['humidity'],\n        wind_speed = data.wind['speed'] * 3.6,\n        wind_gust = 0,\n        pressure = data.main['pressure'],\n        clouds = data.clouds['all'],\n        rain = 0.0,\n        uvi = data.uvi,\n        weather_id = data.weather[1]['id'],\n        weather_main = data.weather[1]['main'],\n        weather_icon = data.weather[1]['icon'],\n        sunrise = data.sys['sunrise'],\n        sunset = data.sys['sunset'],\n    }\n    if data.rain and data.rain['1h'] then\n        collection['rain'] = data.rain['1h']\n    end\n    if data.wind and data.wind['gust'] then\n        collection['wind_gust'] = data.wind['gust'] * 3.6\n    end\n    return collection\nend\n\nfunction SDK:Weather(success, fail)\n    local url = '/weather' .. self:getUrlQueryString()\n    local uviCallback = function(uvi)\n        local wrappedCallback = function(response)\n            if response.status >= 299 then\n                if fail then\n                    fail(response)\n                end\n                return\n            end\n            local data = json.decode(response.data)\n            if success then\n                data['uvi'] = uvi\n                success(SDK:formatWeatherResponse(data))\n            end\n            return\n        end\n        self.http:get(url, wrappedCallback, fail)\n    end\n    SDK:Uvi(uviCallback)\nend\n\nfunction SDK:Uvi(success) -- deprecated\n    local url = '/uvi' .. self:getUrlQueryString()\n    local wrappedCallback = function(response)\n        if response.status ~= 200 then\n            response.data = '{\"value\": 0}'\n        end\n        local data = json.decode(response.data)\n        if success then\n            success(data.value)\n        end\n        return\n    end\n    self.http:get(url, wrappedCallback, fail)\nend\n\nfunction SDK:Forecast(offset, success, fail)\n    local url = '/forecast' .. self:getUrlQueryString()\n    local uviCallback = function(uvi)\n        local wrappedCallback = function(response)\n            if response.status >= 299 then\n                if fail then\n                    fail(response)\n                end\n                return\n            end\n            local data = json.decode(response.data)\n            if success then\n                data.list[offset]['uvi'] = uvi\n                success(SDK:formatWeatherResponse(data.list[offset]))\n            end\n            return\n        end\n        self.http:get(url, wrappedCallback, fail)\n    end\n    SDK:Uvi(uviCallback)\nend\n\nfunction SDK:getUrlQueryString()\n    local string = '?appid=' .. self.app.apikey\n    string = string .. '&lat=' .. self.app.latitude\n    string = string .. '&lon=' .. self.app.longitude\n    string = string .. '&units=metric'\n    string = string .. '&lang=' .. self.app.lang\n    string = string .. '&exclude=minutely,hourly'\n    return string\nend"
         }
     ]
 }
